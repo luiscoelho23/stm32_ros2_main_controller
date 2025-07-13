@@ -1,0 +1,35 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+    
+    # Define controllers to be loaded
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    position_controller:
+      type: position_controllers/JointGroupPositionController
+
+joint_trajectory_controller:
+  ros__parameters:
+    joints:
+      - joint_1
+      - joint_2
+      - joint_3
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+
+position_controller:
+  ros__parameters:
+    joints:
+      - joint_1
+      - joint_2
+      - joint_3
+    
+    interface_name: position 

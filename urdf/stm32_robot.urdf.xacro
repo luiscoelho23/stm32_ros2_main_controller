@@ -1,0 +1,230 @@
+<?xml version="1.0"?>
+<robot name="stm32_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Robot Parameters -->
+  <xacro:property name="PI" value="3.14159265359"/>
+  <xacro:property name="base_mass" value="0.5"/>
+  <xacro:property name="base_size_x" value="0.12"/>
+  <xacro:property name="base_size_y" value="0.12"/>
+  <xacro:property name="base_size_z" value="0.04"/>
+  <xacro:property name="base_height" value="0.02"/>
+  
+  <!-- Motor Parameters -->
+  <xacro:property name="motor_mass" value="0.1"/>
+  <xacro:property name="motor_radius" value="0.015"/>
+  <xacro:property name="motor_length" value="0.03"/>
+  
+  <!-- Arm Parameters -->
+  <xacro:property name="arm_1_mass" value="0.2"/>
+  <xacro:property name="arm_1_length" value="0.135"/>
+  <xacro:property name="arm_1_width" value="0.02"/>
+  <xacro:property name="arm_1_height" value="0.02"/>
+  <xacro:property name="arm_1_offset_y" value="0.012"/>
+  
+  <xacro:property name="arm_2_mass" value="0.15"/>
+  <xacro:property name="arm_2_length" value="0.09"/>
+  <xacro:property name="arm_2_width" value="0.02"/>
+  <xacro:property name="arm_2_height" value="0.02"/>
+  <xacro:property name="arm_2_offset_y" value="-0.025"/>
+  
+  <xacro:property name="arm_3_mass" value="0.08"/>
+  <xacro:property name="arm_3_length" value="0.04"/>
+  <xacro:property name="arm_3_width" value="0.02"/>
+  <xacro:property name="arm_3_height" value="0.02"/>
+  <xacro:property name="arm_3_offset_y" value="-0.025"/>
+  
+  <!-- End Effector Parameters -->
+  <xacro:property name="end_effector_mass" value="0.05"/>
+  <xacro:property name="end_effector_size" value="0.01"/>
+  
+  <!-- Joint Parameters -->
+  <xacro:property name="joint_effort" value="10"/>
+  <xacro:property name="joint_velocity" value="2"/>
+  <xacro:property name="joint_lower_limit" value="0"/>
+  <xacro:property name="joint_upper_limit" value="${PI}"/>
+  
+  <!-- Materials -->
+  <material name="base_material">
+    <color rgba="0.2 0.2 0.2 1.0"/>
+  </material>
+  
+  <material name="motor_material">
+    <color rgba="0.8 0.2 0.2 1.0"/>
+  </material>
+  
+  <material name="arm_material">
+    <color rgba="0.2 0.8 0.2 1.0"/>
+  </material>
+  
+  <material name="end_effector_material">
+    <color rgba="0.2 0.2 0.8 1.0"/>
+  </material>
+  
+  <!-- Inertial Macro -->
+  <xacro:macro name="box_inertial" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass * (y*y + z*z) / 12}" ixy="0" ixz="0" 
+               iyy="${mass * (x*x + z*z) / 12}" iyz="0" 
+               izz="${mass * (x*x + y*y) / 12}"/>
+    </inertial>
+  </xacro:macro>
+  
+  <xacro:macro name="cylinder_inertial" params="mass radius length">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass * (3*radius*radius + length*length) / 12}" ixy="0" ixz="0" 
+               iyy="${mass * (3*radius*radius + length*length) / 12}" iyz="0" 
+               izz="${mass * radius*radius / 2}"/>
+    </inertial>
+  </xacro:macro>
+  
+  <!-- Motor Link Macro -->
+  <xacro:macro name="motor_link" params="name">
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry>
+          <cylinder radius="${motor_radius}" length="${motor_length}"/>
+        </geometry>
+        <material name="motor_material"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry>
+          <cylinder radius="${motor_radius}" length="${motor_length}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial mass="${motor_mass}" radius="${motor_radius}" length="${motor_length}"/>
+    </link>
+  </xacro:macro>
+  
+  <!-- Arm Link Macro -->
+  <xacro:macro name="arm_link" params="name mass length width height offset_y">
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 ${offset_y} ${length/2}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${width} ${height} ${length}"/>
+        </geometry>
+        <material name="arm_material"/>
+      </visual>
+      <collision>
+        <origin xyz="0 ${offset_y} ${length/2}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${width} ${height} ${length}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial mass="${mass}" x="${width}" y="${height}" z="${length}"/>
+    </link>
+  </xacro:macro>
+  
+  <!-- Revolute Joint Macro -->
+  <xacro:macro name="revolute_joint" params="name parent child origin_xyz origin_rpy">
+    <joint name="${name}" type="revolute">
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <origin xyz="${origin_xyz}" rpy="${origin_rpy}"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="${joint_lower_limit}" upper="${joint_upper_limit}" 
+             effort="${joint_effort}" velocity="${joint_velocity}"/>
+    </joint>
+  </xacro:macro>
+  
+  <!-- Fixed Joint Macro -->
+  <xacro:macro name="fixed_joint" params="name parent child origin_xyz origin_rpy">
+    <joint name="${name}" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <origin xyz="${origin_xyz}" rpy="${origin_rpy}"/>
+    </joint>
+  </xacro:macro>
+  
+  <!-- World Link -->
+  <link name="world"/>
+  
+  <!-- Base Link -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${base_height}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_size_x} ${base_size_y} ${base_size_z}"/>
+      </geometry>
+      <material name="base_material"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${base_height}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_size_x} ${base_size_y} ${base_size_z}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertial mass="${base_mass}" x="${base_size_x}" y="${base_size_y}" z="${base_size_z}"/>
+  </link>
+  
+  <!-- Motor Links -->
+  <xacro:motor_link name="link_1"/>
+  <xacro:motor_link name="link_2"/>
+  <xacro:motor_link name="link_3"/>
+  
+  <!-- Arm Links -->
+  <xacro:arm_link name="arm_1" mass="${arm_1_mass}" length="${arm_1_length}" 
+                  width="${arm_1_width}" height="${arm_1_height}" offset_y="${arm_1_offset_y}"/>
+  
+  <xacro:arm_link name="arm_2" mass="${arm_2_mass}" length="${arm_2_length}" 
+                  width="${arm_2_width}" height="${arm_2_height}" offset_y="${arm_2_offset_y}"/>
+  
+  <xacro:arm_link name="arm_3" mass="${arm_3_mass}" length="${arm_3_length}" 
+                  width="${arm_3_width}" height="${arm_3_height}" offset_y="${arm_3_offset_y}"/>
+  
+  <!-- End Effector Link -->
+  <link name="end_effector">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${end_effector_size} ${end_effector_size} ${end_effector_size}"/>
+      </geometry>
+      <material name="end_effector_material"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${end_effector_size}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${end_effector_size} ${end_effector_size} ${end_effector_size}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertial mass="${end_effector_mass}" x="${end_effector_size}" y="${end_effector_size}" z="${end_effector_size}"/>
+  </link>
+  
+  <!-- Joints -->
+  <!-- Fixed joint connecting world to base_link -->
+  <xacro:fixed_joint name="world_to_base" parent="world" child="base_link" 
+                     origin_xyz="0 0 0" origin_rpy="0 0 0"/>
+  
+  <!-- Joint 1: Base to Motor 1 -->
+  <xacro:revolute_joint name="joint_1" parent="base_link" child="link_1" 
+                        origin_xyz="0 0 0.042" origin_rpy="0 ${-PI/2} 0"/>
+  
+  <!-- Fixed joint: Motor 1 to Arm 1 -->
+  <xacro:fixed_joint name="joint_1_to_arm" parent="link_1" child="arm_1" 
+                     origin_xyz="0 0 0" origin_rpy="0 0 0"/>
+  
+  <!-- Joint 2: Arm 1 to Motor 2 -->
+  <xacro:revolute_joint name="joint_2" parent="arm_1" child="link_2" 
+                        origin_xyz="0 ${arm_1_offset_y} ${arm_1_length}" origin_rpy="0 ${-PI/2} 0"/>
+  
+  <!-- Fixed joint: Motor 2 to Arm 2 -->
+  <xacro:fixed_joint name="joint_2_to_arm" parent="link_2" child="arm_2" 
+                     origin_xyz="0 0 0" origin_rpy="0 0 0"/>
+  
+  <!-- Joint 3: Arm 2 to Motor 3 -->
+  <xacro:revolute_joint name="joint_3" parent="arm_2" child="link_3" 
+                        origin_xyz="0 ${arm_2_offset_y} ${arm_2_length}" origin_rpy="0 ${-PI/2} 0"/>
+  
+  <!-- Fixed joint: Motor 3 to Arm 3 -->
+  <xacro:fixed_joint name="joint_3_to_arm" parent="link_3" child="arm_3" 
+                     origin_xyz="0 0 0" origin_rpy="0 0 0"/>
+  
+  <!-- Fixed joint: Arm 3 to End Effector -->
+  <xacro:fixed_joint name="joint_3_to_end" parent="arm_3" child="end_effector" 
+                     origin_xyz="0 ${arm_3_offset_y} ${arm_3_length}" origin_rpy="0 0 0"/>
+
+</robot> 

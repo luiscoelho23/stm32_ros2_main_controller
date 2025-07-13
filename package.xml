@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>stm32_ros2_main_controller</name>
+  <version>1.0.0</version>
+  <description>Simple controller package for STM32 robot with keyboard, GUI, and programmatic control</description>
+  <maintainer email="luiscoelho321@hotmail.com">Luis Coelho</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Core ROS2 dependencies -->
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>control_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>urdf</depend>
+
+  <!-- Action dependencies -->
+  <depend>rclcpp_action</depend>
+  <depend>action_msgs</depend>
+
+  <!-- ROS2 Control dependencies -->
+  <depend>controller_manager</depend>
+  <depend>ros2_control</depend>
+  <depend>ros2_controllers</depend>
+
+  <!-- GUI dependencies -->
+  <depend>python3-tkinter</depend>
+
+  <!-- Gazebo dependencies -->
+  <depend>gazebo-ros2-control</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package> 
