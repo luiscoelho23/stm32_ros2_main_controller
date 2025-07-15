@@ -185,7 +185,7 @@ class RobotLauncher:
             self.log_message("Gazebo is already running")
             return
             
-        command = "ros2 launch stm32_robot_controller launch.py gazebo:=true rviz:=true"
+        command = "ros2 launch stm32_ros2_main_controller launch.py gazebo:=true rviz:=true"
         
         def on_complete():
             self.running_services.discard('gazebo')
@@ -235,11 +235,26 @@ class RobotLauncher:
             except:
                 pass
         
-        # Force kill stubborn Gazebo processes
+        # Force kill stubborn Gazebo processes including GUI components
         try:
             subprocess.run(['pkill', '-9', '-f', 'gazebo'], capture_output=True)
             subprocess.run(['pkill', '-9', '-f', 'joint_state'], capture_output=True)
+            subprocess.run(['pkill', '-9', '-f', 'joint_state_publisher_gui'], capture_output=True)
+            subprocess.run(['pkill', '-9', '-f', 'rviz2'], capture_output=True)
             self.log_message("Force killed stubborn Gazebo processes")
+        except:
+            pass
+        
+        # Additional precise targeting for joint_state_publisher_gui
+        try:
+            result = subprocess.run(['pgrep', '-f', 'joint_state_publisher_gui'], 
+                                  capture_output=True, text=True)
+            if result.stdout:
+                pids = result.stdout.strip().split('\n')
+                for pid in pids:
+                    if pid:
+                        subprocess.run(['kill', '-9', pid], capture_output=True)
+                        self.log_message(f"Force killed joint_state_publisher_gui PID {pid}")
         except:
             pass
         
@@ -258,7 +273,7 @@ class RobotLauncher:
             return
             
         mode = self.mode_var.get()
-        command = f"ros2 run stm32_robot_controller gui_controller.py --ros-args -p control_mode:={mode}"
+        command = f"ros2 run stm32_ros2_main_controller gui_controller.py --ros-args -p control_mode:={mode}"
         
         def on_complete():
             self.running_services.discard('control_gui')
@@ -316,8 +331,8 @@ class RobotLauncher:
         # Wait a moment for graceful shutdown
         time.sleep(2)
         
-        # Kill any remaining ROS processes that might be hanging around
-        ros_processes = [
+        # Kill specific ROS processes (be more selective to avoid killing the launcher)
+        specific_processes = [
             'joint_state_publisher',
             'joint_state_publisher_gui',
             'robot_state_publisher', 
@@ -326,13 +341,12 @@ class RobotLauncher:
             'gzserver',
             'gzclient',
             'rviz2',
-            'ros2',
             'gui_controller.py',
-            'python3.*joint_state_publisher',
-            'python3.*robot_state_publisher'
+            'ros2_control_node',
+            'spawner'
         ]
         
-        for process_name in ros_processes:
+        for process_name in specific_processes:
             try:
                 # Use pkill to kill processes by name
                 result = subprocess.run(['pkill', '-f', process_name], 
@@ -342,20 +356,50 @@ class RobotLauncher:
             except:
                 pass
         
-        # Also kill any Python processes that might be ROS-related
+        # Kill specific Python ROS processes but avoid killing the launcher
         try:
-            subprocess.run(['pkill', '-f', 'python3.*ros2'], capture_output=True)
-            subprocess.run(['pkill', '-f', 'python.*joint_state'], capture_output=True)
-            self.log_message("Killed Python ROS processes")
+            # More specific patterns that won't match the launcher
+            subprocess.run(['pkill', '-f', 'python3.*joint_state_publisher'], capture_output=True)
+            subprocess.run(['pkill', '-f', 'python3.*robot_state_publisher'], capture_output=True)
+            subprocess.run(['pkill', '-f', 'python3.*controller_manager'], capture_output=True)
+            # Additional patterns for joint_state_publisher_gui
+            subprocess.run(['pkill', '-f', 'joint_state_publisher_gui'], capture_output=True)
+            subprocess.run(['pkill', '-f', '/opt/ros/.*joint_state_publisher_gui'], capture_output=True)
+            self.log_message("Killed specific Python ROS processes")
         except:
             pass
         
-        # Force kill any stubborn processes
+        # Give processes a moment to terminate
+        time.sleep(1)
+        
+        # Use pgrep/kill for more precise targeting of joint_state_publisher_gui
         try:
-            subprocess.run(['pkill', '-9', '-f', 'ros2'], capture_output=True)
-            subprocess.run(['pkill', '-9', '-f', 'gazebo'], capture_output=True)
-            subprocess.run(['pkill', '-9', '-f', 'joint_state'], capture_output=True)
-            self.log_message("Force killed any remaining ROS processes")
+            # Find and kill joint_state_publisher_gui processes specifically
+            result = subprocess.run(['pgrep', '-f', 'joint_state_publisher_gui'], 
+                                  capture_output=True, text=True)
+            if result.stdout:
+                pids = result.stdout.strip().split('\n')
+                for pid in pids:
+                    if pid:
+                        subprocess.run(['kill', '-TERM', pid], capture_output=True)
+                        self.log_message(f"Terminated joint_state_publisher_gui PID {pid}")
+                time.sleep(1)  # Give time for graceful shutdown
+                
+                # Force kill if still running
+                for pid in pids:
+                    if pid:
+                        subprocess.run(['kill', '-9', pid], capture_output=True)
+        except:
+            pass
+        
+        # Force kill only very specific stubborn processes
+        try:
+            subprocess.run(['pkill', '-9', '-f', 'gzserver'], capture_output=True)
+            subprocess.run(['pkill', '-9', '-f', 'gzclient'], capture_output=True)
+            subprocess.run(['pkill', '-9', '-f', 'ros2_control_node'], capture_output=True)
+            subprocess.run(['pkill', '-9', '-f', 'joint_state_publisher_gui'], capture_output=True)
+            subprocess.run(['pkill', '-9', '-f', 'rviz2'], capture_output=True)
+            self.log_message("Force killed stubborn processes")
         except:
             pass
                     

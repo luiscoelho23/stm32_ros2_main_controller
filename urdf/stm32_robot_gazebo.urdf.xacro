@@ -76,7 +76,7 @@
   <!-- Gazebo ros2_control plugin -->
   <gazebo>
     <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-      <parameters>$(find stm32_robot_controller)/config/controllers.yaml</parameters>
+      <parameters>$(find stm32_ros2_main_controller)/config/controllers.yaml</parameters>
     </plugin>
   </gazebo>
 

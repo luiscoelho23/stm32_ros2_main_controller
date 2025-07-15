@@ -19,7 +19,7 @@ def generate_launch_description():
             selected_controller = arg.split(':=')[1]
             break
 
-    pkg_name = 'stm32_robot_controller'  # the package name
+    pkg_name = 'stm32_ros2_main_controller'  # the package name
 
     # Add launch argument for controller selection
     controller_type = LaunchConfiguration('controller_type', default='position_controller')
@@ -125,7 +125,7 @@ def generate_launch_description():
 
     # Load controller configuration from file
     controller_config = os.path.join(
-        get_package_share_directory('stm32_robot_controller'),
+        get_package_share_directory('stm32_ros2_main_controller'),
         'config',
         'controllers.yaml'
     )
