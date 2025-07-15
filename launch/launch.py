@@ -61,7 +61,7 @@ def generate_launch_description():
 
     pkg_share = get_package_share_directory(pkg_name)
 
-    urdf_path = 'urdf/stm32_robot_gazebo.urdf.xacro'
+    urdf_path = 'resources/urdf/stm32_robot_gazebo.urdf.xacro'
     rviz_relative_path = 'resources/rviz/config.rviz'
     rviz_absolute_path = os.path.join(pkg_share, rviz_relative_path)
 
